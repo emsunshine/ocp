@@ -39,6 +39,8 @@ if TYPE_CHECKING:
     from torch.nn.modules.module import _IncompatibleKeys
 
 
+import pdb
+    
 def pyg2_data_transform(data: Data):
     """
     if we're on the new pyg (2.0 or later) and if the Data stored is in older format
@@ -545,10 +547,21 @@ def get_pbc_distances(
 
 
 def radius_graph_pbc(
-    data, radius, max_num_neighbors_threshold, pbc=[True, True, False]
+    data, radius, max_num_neighbors_threshold, pbc=[True, True, True]
 ):
     device = data.pos.device
     batch_size = len(data.natoms)
+    
+    if hasattr(data, "pbc"):
+        data.pbc = np.array(data.pbc)
+
+        for i in range(2):
+            if not np.any(data.pbc[:,i]):
+                pbc[i] = False
+            elif np.all(data.pbc[:, i]):
+                pbc[i] = True
+            else:
+                raise RuntimeError("Different structures in the batch have different PBC configurations. This is not currently supported.")
 
     # position of the atoms
     atom_pos = data.pos
